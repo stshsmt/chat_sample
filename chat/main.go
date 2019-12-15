@@ -68,6 +68,8 @@ func main() {
 	})
 	http.HandleFunc("/auth/", loginHandler)
 	http.Handle("/room", r)
+	http.Handle("/upload", &templateHandler{filename: "upload.html"})
+	http.HandleFunc("/uploader", uploaderHandler)
 
 	go r.run()
 	log.Println("Starting web server on", *addr)
