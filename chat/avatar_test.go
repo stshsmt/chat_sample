@@ -5,21 +5,28 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	gomniauthtest "github.com/stretchr/gomniauth/test"
 )
 
 func TestAuthAvatar(t *testing.T) {
 	var authAvatar AuthAvatar
+	testUser := &gomniauthtest.TestUser{}
 
-	client := new(client)
-	url, err := authAvatar.GetAvatarURL(client)
+	testUser.On("AvatarURL").Return("", ErrNoAvatarURL)
+	testChatUser := &chatUser{User: testUser}
+
+	url, err := authAvatar.GetAvatarURL(testChatUser)
 	if err != ErrNoAvatarURL {
 		t.Error("値が存在しない場合、AuthAvatar.GetAvatarURLはErrNoAvatarURLを返すべきです")
 	}
 
 	testUrl := "http://url-to-avatar/"
-	client.userData = map[string]interface{}{"avatar_url": testUrl}
+	testUser = &gomniauthtest.TestUser{}
+	testChatUser.User = testUser
+	testUser.On("AvatarURL").Return(testUrl, nil)
 
-	url, err = authAvatar.GetAvatarURL(client)
+	url, err = authAvatar.GetAvatarURL(testChatUser)
 	if err != nil {
 		t.Error("値が存在する場合、AuthAvatar.GetAvatarURLエラーを返すべきはありません")
 	} else {
@@ -31,15 +38,13 @@ func TestAuthAvatar(t *testing.T) {
 
 func TestGravatarAvatar(t *testing.T) {
 	var gravatarAvatar GravatarAvatar
+	user := &chatUser{uniqueID: "abc"}
 
-	client := new(client)
-	client.userData = map[string]interface{}{"userid": "0bc83cb571cd1c50ba6f3e8a78ef1346"}
-
-	url, err := gravatarAvatar.GetAvatarURL(client)
+	url, err := gravatarAvatar.GetAvatarURL(user)
 	if err != nil {
 		t.Error("GravatarAvatar.GetAvatarURLはエラーを返すべきではありません")
 	}
-	if url != "//www.gravatar.com/avatar/0bc83cb571cd1c50ba6f3e8a78ef1346" {
+	if url != "//www.gravatar.com/avatar/abc" {
 		t.Errorf("GravatarAvatar.GetAvatarURLが%sという誤った値を返しました", url)
 	}
 }
@@ -50,12 +55,10 @@ func TestFileSystemAvatar(t *testing.T) {
 
 	defer func() { os.Remove(filename) }()
 
-	var fileSystemAvatar fileSystemAvatar
+	var fileSystemAvatar FileSystemAvatar
+	user := &chatUser{uniqueID: "abc"}
 
-	client := new(client)
-	client.userData = map[string]interface{}{"userid": "abc"}
-
-	url, err := fileSystemAvatar.GetAvatarURL(client)
+	url, err := fileSystemAvatar.GetAvatarURL(user)
 	if err != nil {
 		t.Error("FileSystemAvatar.GetAvatarURLはエラーを返すべきではありません")
 	}
